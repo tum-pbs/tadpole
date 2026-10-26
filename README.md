@@ -5,8 +5,7 @@
 <h4 align="center">Autoencoders as Foundation Models for 3D PDEs with Online Learning</h4>
 <p align="center">
 <a href="https://github.com/tum-pbs/tadpole">
-  <img src="https://img.shields.io/badge/Page-_tum--pbs.github.io%2Ftadpole%2F-8A2BE2?logo=firefox
-  " alt="Website"/>
+  <img src="https://img.shields.io/badge/Page-_tum--pbs.github.io%2Ftadpole%2F-8A2BE2?logo=firefox" alt="Website"/>
 </a>
 <a href="https://arxiv.org/abs/2605.15284">
   <img src="https://img.shields.io/badge/arXiv-2605.15284-b31b1b?logo=arxiv" alt="Read on arXiv"/>
