@@ -4,6 +4,10 @@
 </h1>
 <h4 align="center">Autoencoders as Foundation Models for 3D PDEs with Online Learning</h4>
 <p align="center">
+<a href="https://github.com/tum-pbs/tadpole">
+  <img src="https://img.shields.io/badge/Page-_tum--pbs.github.io%2Ftadpole%2F-8A2BE2?logo=firefox
+  " alt="Website"/>
+</a>
 <a href="https://arxiv.org/abs/2605.15284">
   <img src="https://img.shields.io/badge/arXiv-2605.15284-b31b1b?logo=arxiv" alt="Read on arXiv"/>
 </a>
@@ -46,13 +50,12 @@ Tadpole distinguishes itself from existing PDE foundation models in three key as
 ***Cite as:*** 
 
 ```latex
-@article{Liu2026Tadpole,
-  author = {Qiang Liu and Felix Koehler and Benjamin Holzschuh and Nils Thuerey},
-  title = {Tadpole: Autoencoders as Foundation Models for 3D PDEs with Online Learning},
-  eprint={2605.15284},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG},
-  url={https://arxiv.org/abs/2605.15284} 
+@inproceedings{liu2026tadpole,
+  title     = {Tadpole: Autoencoders as Foundation Models
+               for 3D PDEs with Online Learning},
+  author    = {Qiang Liu and Felix Koehler and Benjamin Holzschuh and Nils Thuerey},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2026}
 }
 ```
 
