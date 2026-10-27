@@ -64,8 +64,8 @@
           <h1 id="hero-title">Learn the world<br /><span class="hero-title-line">before predicting it.</span></h1>
           <p class="hero-deck">
             <strong>Tadpole</strong> is a foundation model for three-dimensional PDEs.
-            It learns a reusable language of physical structure through autoencoding—then
-            adapts that language to reconstruction, dynamics, and generation.
+            It learns a reusable language of physical structure through autoencoding and then
+            adapts it for reconstruction, dynamics, and generation.
           </p>
           <p class="authors">
             <a href="https://qiauil.github.io/">Qiang Liu</a> ·
@@ -152,7 +152,7 @@
           <p class="body-large">
             Tadpole is pre-trained as a variational autoencoder. It compresses a single 3D state
             into a compact latent representation, then reconstructs the original field. This makes
-            pre-training about spatial structure—not about committing to one system’s evolution.
+            pre-training about spatial structure, not about committing to one system’s evolution.
           </p>
         </div>
         <figure class="vae-animation" aria-labelledby="vae-animation-caption">
@@ -232,7 +232,7 @@
           </div>
           <p>
             GPU solvers generate synthetic PDE data while the network trains. A multi-stage buffer
-            keeps simulation, communication, and learning moving in parallel—removing the need to
+            keeps simulation, communication, and learning moving in parallel, removing the need to
             precompute and repeatedly load a giant static dataset.
           </p>
         </div>
@@ -324,7 +324,7 @@
           </div>
           <p class="body-large">
             Tadpole splits variables into individual fields and learns from random 3D crops. At inference,
-            the same model can process different channel counts and domain sizes—including resolutions far
+            the same model can process different channel counts and domain sizes, including resolutions far
             beyond those seen in pre-training.
           </p>
         </div>
@@ -389,7 +389,7 @@
           </div>
           <div class="reconstruction-overall-caption" id="reconstruction-overall-caption">
             <span>Zero-shot reconstruction</span>
-            <p>Visualizations of Tadpole-B zero-shot reconstruction on different datasets. Only velocity channels are shown here.</p>
+            <p>Visualizations of Tadpole-B zero-shot reconstruction on different datasets (up: ground truth, down: zero-shot reconstruction).</p>
           </div>
         </div>
         <div class="callout-line">
@@ -513,8 +513,8 @@
           <h2>Teach the representation how time moves.</h2>
           <p class="body-large">
             Tadpole-DFT preserves the pre-trained backbone while adding only the capacity needed for
-            dynamics. It performs best among the compared models on the transitional boundary-layer
-            task and remains among the top methods on isotropic turbulence.
+            dynamics. It performs best among the models compared and achieves superior performance
+            compared to the model trained from scratch.
           </p>
         </div>
         <figure class="paper-figure results-figure benchmark-figure" aria-label="Six bar plots comparing dynamics performance and trainable parameter counts">
@@ -645,7 +645,7 @@
         <ol class="method-steps">
           <li>
             <span>01</span>
-            <div><h3>Learn the manifold</h3><p>A variational autoencoder compresses and reconstructs each state through a shared latent space.</p></div>
+            <div><h3>Learn the spatial structure</h3><p>A variational autoencoder compresses and reconstructs each state through a shared latent space.</p></div>
           </li>
           <li>
             <span>02</span>
