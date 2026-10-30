@@ -5,13 +5,13 @@
 <h4 align="center">Autoencoders as Foundation Models for 3D PDEs with Online Learning</h4>
 <p align="center">
 <a href="https://tum-pbs.github.io/tadpole/">
-  <img src="https://img.shields.io/badge/Page-_tum--pbs.github.io%2Ftadpole%2F-8A2BE2?logo=firefox" alt="Website"/>
+  <img src="https://img.shields.io/badge/Page-tum--pbs.github.io%2Ftadpole%2F-8A2BE2?logo=firefox" alt="Website"/>
 </a>
 <a href="https://arxiv.org/abs/2605.15284">
   <img src="https://img.shields.io/badge/arXiv-2605.15284-b31b1b?logo=arxiv" alt="Read on arXiv"/>
 </a>
-<a href="https://huggingface.co/thuerey-group/Tadpole">
-  <img src="https://img.shields.io/badge/Huggingface-Tadpole-FFD21E?logo=huggingface" alt="Pretrained weights on Hugging face"/>
+<a href="https://huggingface.co/thuerey-group/tadpole">
+  <img src="https://img.shields.io/badge/Huggingface-thuerey--group%2Ftadpole%2F-FFD21E?logo=huggingface" alt="Pretrained weights on Hugging face"/>
 </a>
 </p>
 <img src="assets/images/reconstruction_vis_example_github.svg"/>
@@ -61,12 +61,11 @@ Tadpole distinguishes itself from existing PDE foundation models in three key as
 ## User Guide
 ### Installation
 ```bash
-pip install git+https://github.com/tum-pbs/Tadpole
+pip install git+https://github.com/tum-pbs/tadpole
 ```
 ### Tutorials
-1. [Load pre-trained weights and run models](https://github.com/tum-pbs/Tadpole/blob/main/tutorials/load_and_run.ipynb)
+1. [Load models and pre-trained weights](https://github.com/tum-pbs/tadpole/blob/main/tutorials/load_and_run.ipynb)
 2. Run online learning framework (to be added).
-3. Pre-train and fine-tune models (to be added).
 
 ## Additional Info
 This project is part of the physics-based deep learning topic in [**Physics-based Simulation group**](https://ge.in.tum.de/) at TUM.

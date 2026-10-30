@@ -89,6 +89,7 @@ class KLP3DEncoder(P3DEncoder):
         repetitions=1,
         ckpt_path=None,
         ckpt_prefix="model.encoder.",
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__(
             window_size,
@@ -106,6 +107,7 @@ class KLP3DEncoder(P3DEncoder):
             repetitions,
             ckpt_path,
             ckpt_prefix,
+            padding_mode=padding_mode,
         )
         self.to_latent = torch.nn.Conv3d(
             self.latent_size, self.latent_size * 2, kernel_size=1

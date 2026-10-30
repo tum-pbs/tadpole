@@ -1,6 +1,7 @@
 import torch.nn as nn
 from typing import Optional, Sequence, Union
 from .modules import PixelShuffle3d
+from typing import Literal
 
 
 class ConditionedEncoder3DBlock(nn.Module):
@@ -9,17 +10,18 @@ class ConditionedEncoder3DBlock(nn.Module):
         self,
         in_channels: int,
         num_groups: int = 32,
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__()
         self.in_channels = in_channels
 
         self.gn_1 = nn.GroupNorm(num_groups, in_channels)
         self.activation_1 = nn.GELU()
-        self.conv_1 = nn.Conv3d(in_channels, in_channels, 3, 1, 1)
+        self.conv_1 = nn.Conv3d(in_channels, in_channels, 3, 1, 1, padding_mode=padding_mode)
 
         self.gn_2 = nn.GroupNorm(num_groups, in_channels)
         self.activation_2 = nn.GELU()
-        self.conv_2 = nn.Conv3d(in_channels, in_channels, 3, 1, 1)
+        self.conv_2 = nn.Conv3d(in_channels, in_channels, 3, 1, 1, padding_mode=padding_mode)
 
     def forward(self, x):
         x_res = x
@@ -43,6 +45,7 @@ class ConditionedEncoder3D(nn.Module):
         embedding_dim: int, #need to remove, useless
         repetitions: int = 1,
         num_groups: int = 32,
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__()
         self.in_channels = in_channels
@@ -62,7 +65,7 @@ class ConditionedEncoder3D(nn.Module):
         self.num_downsampling_layers = num_downsampling_layers
         self.embedding_dim = embedding_dim
         self.feature_embed = nn.Conv3d(
-            in_channels, self.feature_embedding_dim[0], 3, 1, 1
+            in_channels, self.feature_embedding_dim[0], 3, 1, 1, padding_mode=padding_mode
         )
         self.downsampling_layers = nn.ModuleList()
         for i in range(num_downsampling_layers):
@@ -73,6 +76,7 @@ class ConditionedEncoder3D(nn.Module):
                     3,
                     2,
                     1,
+                    padding_mode=padding_mode,
                 )
             )
         self.blocks = nn.ModuleList()
@@ -82,6 +86,7 @@ class ConditionedEncoder3D(nn.Module):
                     ConditionedEncoder3DBlock(
                         self.feature_embedding_dim[i + 1],
                         num_groups=num_groups,
+                        padding_mode=padding_mode,
                     )
                     for _ in range(repetitions)
                 ]
@@ -129,6 +134,7 @@ class ConditionedDecoder3D(nn.Module):
         repetitions: int = 1,
         features_first_layer: int = None,
         num_groups: int = 32,
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__()
         self.out_channels = out_channels
@@ -150,7 +156,7 @@ class ConditionedDecoder3D(nn.Module):
         self.repetitions = repetitions
 
         self.decompress = nn.Conv3d(
-            self.feature_embedding_dim[-1], out_channels, 3, 1, 1
+            self.feature_embedding_dim[-1], out_channels, 3, 1, 1, padding_mode=padding_mode
         )
 
         self.blocks = nn.ModuleList()
@@ -160,6 +166,7 @@ class ConditionedDecoder3D(nn.Module):
                     ConditionedDecoder3DBlock(
                         self.feature_embedding_dim[i + 1],
                         num_groups=num_groups,
+                        padding_mode=padding_mode,
                     )
                     for _ in range(self.repetitions)
                 ]

@@ -3,12 +3,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
-from typing import Optional, Tuple
-from typing import Optional, Sequence, Union, Tuple
-from timm.layers import DropPath
+from typing import Optional
+from typing import Optional, Sequence, Union
+from timm.models.layers import DropPath
 
 from .utils import window_partition, window_reverse
 from .modules import PixelShuffle3d
+from typing import Literal
 
 
 class Mlp(nn.Module):
@@ -178,14 +179,23 @@ class PosEmbMLPSwinv3D(nn.Module):
         return input_tensor
 
 
-
 class Downsample(nn.Module):
-    def __init__(self, n_feat):
-        super(Downsample, self).__init__()
+    def __init__(
+        self,
+        n_feat,
+        padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
+    ):
+        super().__init__()
 
         self.body = nn.Sequential(
             nn.Conv3d(
-                n_feat, n_feat * 2, kernel_size=3, stride=2, padding=1, bias=False
+                n_feat,
+                n_feat * 2,
+                kernel_size=3,
+                stride=2,
+                padding=1,
+                bias=False,
+                padding_mode=padding_mode,
             ),
         )
 
@@ -194,17 +204,33 @@ class Downsample(nn.Module):
 
 
 class Upsample(nn.Module):
-    def __init__(self, n_feat):
-        super(Upsample, self).__init__()
+    def __init__(
+        self,
+        n_feat,
+        padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
+    ):
+        super().__init__()
 
         self.body = nn.Sequential(
             nn.Conv3d(
-                n_feat, n_feat * 2, kernel_size=3, stride=1, padding=1, bias=False
+                n_feat,
+                n_feat * 2,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+                padding_mode=padding_mode,
             ),
             PixelShuffle3d(2),
             nn.Conv3d(
-                n_feat//4, n_feat //2, kernel_size=3, stride=1, padding=1, bias=False
-            )
+                n_feat // 4,
+                n_feat // 2,
+                kernel_size=3,
+                stride=1,
+                padding=1,
+                bias=False,
+                padding_mode=padding_mode,
+            ),
         )
 
     def forward(self, x):
@@ -216,14 +242,22 @@ class FinalLayer(nn.Module):
     The final layer of IPT.
     """
 
-    def __init__(self, hidden_size, out_channels):
+    def __init__(
+        self,
+        hidden_size,
+        out_channels,
+        padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
+    ):
         super().__init__()
         self.norm_final = LayerNorm3d(hidden_size, affine=False, eps=1e-6)
         self.out_proj = nn.Conv3d(
-            hidden_size, out_channels, kernel_size=3, stride=1, padding=1, bias=True
-        )
-        self.adaLN_modulation = nn.Sequential(
-            nn.SiLU(), nn.Linear(hidden_size, 2 * hidden_size, bias=True)
+            hidden_size,
+            out_channels,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            bias=True,
+            padding_mode=padding_mode,
         )
 
     def forward(self, x):
@@ -333,7 +367,6 @@ class PDEDiTBlock(nn.Module):
 
     Modifications:
         - 2D + time
-        - AdaIN for diffusion conditioning
         - Conditioning via context tokens
         - Sliding window
     """
@@ -585,6 +618,7 @@ class P3DTransformerEncoder(nn.Module):
         mlp_ratio: float = 4.0,
         periodic: bool = False,
         shift: bool = False,
+        padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
     ):
         super().__init__()
 
@@ -631,11 +665,11 @@ class P3DTransformerEncoder(nn.Module):
                     **dit_stage_args,
                 )
             )
-            self.downsamples.append(Downsample(hidden_size_layer))
+            self.downsamples.append(Downsample(hidden_size_layer, padding_mode=padding_mode))
 
         # latent
         hidden_size_latent = min(
-            hidden_size * 2**self.num_encoder_layers, 2*max_hidden_size
+            hidden_size * 2**self.num_encoder_layers, 2 * max_hidden_size
         )
         self.latent = P3DStage(
             dim=hidden_size_latent,
@@ -650,7 +684,7 @@ class P3DTransformerEncoder(nn.Module):
     def initialize_weights(self):
         # Initialize transformer layers:
         def _basic_init(module):
-            if isinstance(module, nn.Linear) or isinstance(module, nn.Conv2d):
+            if isinstance(module, nn.Linear) or isinstance(module, nn.Conv3d):
                 torch.nn.init.xavier_uniform_(module.weight)
                 if module.bias is not None:
                     nn.init.constant_(module.bias, 0)
@@ -663,11 +697,8 @@ class P3DTransformerEncoder(nn.Module):
         x: (N, C, H, W, D) tensor of spatial inputs (images or latent representations of images)
         """
         for encoder_level, downsample in zip(self.encoder_levels, self.downsamples):
-#           print(f"encoder_level input shape: {x.shape}")
             out_enc_level = encoder_level(x)
-#            print(f"encoder_level output shape: {out_enc_level.shape}")
             x = downsample(out_enc_level)
-#        print(f"latent input shape: {x.shape}")
         x = self.latent(x)
         return x
 
@@ -687,6 +718,7 @@ class P3DTransformerDecoder(nn.Module):
         mlp_ratio: float = 4.0,
         periodic: bool = False,
         shift: bool = False,
+        padding_mode: Literal["zeros", "reflect", "replicate", "circular"] = "zeros",
     ):
         super().__init__()
 
@@ -722,7 +754,7 @@ class P3DTransformerDecoder(nn.Module):
         self.upsamples = nn.ModuleList()
         self.decoder_levels = nn.ModuleList()
 
-        self.upsamples.append(Upsample(hidden_size_layer0*2))
+        self.upsamples.append(Upsample(hidden_size_layer0 * 2, padding_mode=padding_mode))
         self.decoder_levels.append(
             P3DStage(
                 dim=hidden_size_layer0,
@@ -736,11 +768,11 @@ class P3DTransformerDecoder(nn.Module):
         # decoder layers 1 - num_encoder_layers
         for i in range(1, self.num_encoder_layers):
             hidden_size_layer = min(hidden_size**i, max_hidden_size)
-            if 2* hidden_size_layer >= max_hidden_size:
+            if 2 * hidden_size_layer >= max_hidden_size:
                 hidden_size_upsample = max_hidden_size
             else:
                 hidden_size_upsample = 2 * hidden_size_layer
-            self.upsamples.append(Upsample(hidden_size_upsample))
+            self.upsamples.append(Upsample(hidden_size_upsample, padding_mode=padding_mode))
             self.decoder_levels.append(
                 P3DStage(
                     dim=hidden_size_layer,
@@ -751,7 +783,7 @@ class P3DTransformerDecoder(nn.Module):
                 )
             )
 
-        self.final_layer = FinalLayer(self.hidden_size, self.hidden_size)
+        self.final_layer = FinalLayer(self.hidden_size, self.hidden_size,padding_mode=padding_mode)
         self.initialize_weights()
 
     def initialize_weights(self):
@@ -765,21 +797,12 @@ class P3DTransformerDecoder(nn.Module):
         self.apply(_basic_init)
 
         # Zero-out output layers:
-        nn.init.constant_(self.final_layer.adaLN_modulation[-1].weight, 0)
-        nn.init.constant_(self.final_layer.adaLN_modulation[-1].bias, 0)
         nn.init.constant_(self.final_layer.out_proj.weight, 0)
         nn.init.constant_(self.final_layer.out_proj.bias, 0)
 
     def forward(self, x):
-        # decoder: reverse order except the first (which is up1_0 and decoder_level_0)
-        for upsample, decoder_level in zip(
-            self.upsamples, self.decoder_levels
-        ):  
-#            print(f"decoder_level input shape: {x.shape}")
+        for upsample, decoder_level in zip(self.upsamples, self.decoder_levels):
             x = upsample(x)
-#            print(f"upsample output shape: {x.shape}")
             x = decoder_level(x)
-        # output
-#        print(f"final_layer input shape: {x.shape}")
         x = self.final_layer(x)
         return x

@@ -36,10 +36,14 @@ class ConvDecoderSkip(nn.Module):
         self,
         conv_decoder: ConditionedDecoder3D,
         use_checkpoint: bool = False,
+        zero_init_scale: bool = True,
     ):
         super().__init__()
         self.conv_decoder = conv_decoder
-        self.scales = nn.Parameter(torch.zeros(self.conv_decoder.num_upsampling_layers))
+        if zero_init_scale:
+            self.scales = nn.Parameter(torch.zeros(self.conv_decoder.num_upsampling_layers))
+        else:
+            self.scales = nn.Parameter(torch.randn(self.conv_decoder.num_upsampling_layers))
         self.use_checkpoint = use_checkpoint
 
     def forward(self, x, encoder_outputs):
@@ -48,7 +52,7 @@ class ConvDecoderSkip(nn.Module):
         for i in range(self.conv_decoder.num_upsampling_layers - 1):
             for j in range(self.conv_decoder.repetitions):
                 if self.use_checkpoint:
-                    x = checkpoint(self.conv_decoder.blocks[i * self.conv_decoder.repetitions + j], x)
+                    x = checkpoint(self.conv_decoder.blocks[i * self.conv_decoder.repetitions + j], x, use_reentrant=False)
                 else:
                     x = self.conv_decoder.blocks[i * self.conv_decoder.repetitions + j](x)
             x = self.conv_decoder.upsampling_layers[i + 1](x)
@@ -91,10 +95,14 @@ class P3DTransformerDecoderSkip(nn.Module):
         self,
         transformer: P3DTransformerDecoder,
         use_checkpoint: bool = False,
+        zero_init_scale: bool = True,
     ):
         super().__init__()
         self.transformer = transformer
-        self.scales = nn.Parameter(torch.zeros(len(self.transformer.upsamples)))
+        if zero_init_scale:
+            self.scales = nn.Parameter(torch.zeros(len(self.transformer.upsamples)))
+        else:
+            self.scales = nn.Parameter(torch.randn(len(self.transformer.upsamples)))
         self.use_checkpoint = use_checkpoint
 
     def forward(self, x, encoder_outputs):
@@ -107,7 +115,7 @@ class P3DTransformerDecoderSkip(nn.Module):
             x += encoder_outputs[::-1][i] * self.scales[i]
             #            print(f"upsample output shape: {x.shape}")
             if self.use_checkpoint:
-                x = checkpoint(decoder_level, x)
+                x = checkpoint(decoder_level, x, use_reentrant=False)
             else:
                 x = decoder_level(x)
         # output
@@ -142,10 +150,11 @@ class P3DDecoderSkip(nn.Module):
         self,
         decoder: P3DDecoder,
         use_checkpoint: bool = False,
+        zero_init_scale: bool = True,
     ):
         super().__init__()
-        self.conv_decoder = ConvDecoderSkip(decoder.conv_decoder,use_checkpoint=use_checkpoint)
-        self.transformer_decoder = P3DTransformerDecoderSkip(decoder.transformer_decoder,use_checkpoint=use_checkpoint)
+        self.conv_decoder = ConvDecoderSkip(decoder.conv_decoder,use_checkpoint=use_checkpoint, zero_init_scale=zero_init_scale)
+        self.transformer_decoder = P3DTransformerDecoderSkip(decoder.transformer_decoder,use_checkpoint=use_checkpoint, zero_init_scale=zero_init_scale)
 
     def forward(
         self,
@@ -182,8 +191,8 @@ class KLP3DEncoderSkip(nn.Module):
     ) -> Union[torch.Tensor, DiagonalGaussianDistribution]:
         ## Conv encoding
         if self.use_checkpoint:
-            x, res_conv = checkpoint(self.conv_encoder, x)
-            x, res_transformer = checkpoint(self.transformer_encoder, x)
+            x, res_conv = checkpoint(self.conv_encoder, x, use_reentrant=False)
+            x, res_transformer = checkpoint(self.transformer_encoder, x, use_reentrant=False)
         else:
             x, res_conv = self.conv_encoder(x)
             x, res_transformer = self.transformer_encoder(x)

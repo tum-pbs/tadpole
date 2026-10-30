@@ -1,6 +1,6 @@
 import torch
 from collections import OrderedDict
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, Literal
 from diffusers import ModelMixin
 from .conv import ConditionedEncoder3D, ConditionedDecoder3D
 from .transformer import P3DTransformerEncoder, P3DTransformerDecoder
@@ -26,6 +26,7 @@ class P3DEncoder(ModelMixin):
         ckpt_path: Optional[str] = None,
         ckpt_prefix: str = "model.encoder.",
         in_channels: int = 1,
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__()
         # "hidden_size must be equal to the last element of feature_embedding_dim"
@@ -38,6 +39,7 @@ class P3DEncoder(ModelMixin):
             mlp_ratio=mlp_ratio,
             periodic=periodic,
             shift=shift,
+            padding_mode=padding_mode,
         )
         self.num_downsampling_layers = num_downsampling_layers
         self.conv_encoder = ConditionedEncoder3D(
@@ -47,6 +49,7 @@ class P3DEncoder(ModelMixin):
             embedding_dim=time_embedding_dim,
             num_groups=num_groups,
             repetitions=repetitions,
+            padding_mode=padding_mode,
         )
         self.latent_size = self.transformer_encoder.latent_size
         if ckpt_path is not None:
@@ -92,6 +95,7 @@ class P3DDecoder(ModelMixin):
         ckpt_path: Optional[str] = None,
         ckpt_prefix: str = "model.decoder.",
         out_channels: int = 1,
+        padding_mode: Literal["zeros", "reflect","replicate","circular"] = "zeros",
     ):
         super().__init__()
         self.transformer_decoder = P3DTransformerDecoder(
@@ -103,6 +107,7 @@ class P3DDecoder(ModelMixin):
             mlp_ratio=mlp_ratio,
             periodic=periodic,
             shift=shift,
+            padding_mode=padding_mode,
         )
         self.num_downsampling_layers = num_downsampling_layers
         self.latent_size = hidden_size * 2 ** (len(depth) // 2)
@@ -114,6 +119,7 @@ class P3DDecoder(ModelMixin):
             features_first_layer=feature_embedding_dim[-1],
             num_groups=num_groups,
             repetitions=repetitions,
+            padding_mode=padding_mode,
         )
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, prefix=ckpt_prefix)

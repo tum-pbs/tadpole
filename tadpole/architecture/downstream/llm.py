@@ -237,7 +237,7 @@ class LLMLayer(nn.Module):
         if attention_method == "hyper":
             self.attn = HyperAttentionBlock(dim, dim, num_heads, causal=causal)
         else:
-            self.attn = AttentionBlock(dim, dim, num_heads, causal=causal)
+            self.attn = AttentionBlock(dim, num_heads, causal=causal)
         self.input_layernorm = LlamaRMSNorm(dim, eps=1e-05)
         self.post_attention_layernorm = LlamaRMSNorm(dim, eps=1e-05)
         self.mlp = LlamaMLP(dim, inner_dim)

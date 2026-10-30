@@ -216,5 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+.vscode
 hugging_face
 exp
