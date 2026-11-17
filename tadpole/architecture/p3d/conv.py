@@ -1,7 +1,14 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from typing import Optional, Sequence, Union
 from .modules import PixelShuffle3d
 from typing import Literal
+
+
+def padded_conv_forward(self, input, weight, bias):
+    weight = F.pad(weight, (0, 0, 0, 0, 0, 0, 0, 0, 0, 1))
+    bias = None if bias is None else F.pad(bias, (0, 1))
+    return nn.Conv3d._conv_forward(self, input, weight, bias)[:, :1]
 
 
 class ConditionedEncoder3DBlock(nn.Module):

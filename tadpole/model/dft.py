@@ -1,3 +1,4 @@
+import types
 import torch
 from torch import nn
 from torch.nn import Module
@@ -7,6 +8,8 @@ from collections import OrderedDict
 from ..architecture.p3d import _KLP3DEncoder,_P3DDecoder
 from ..architecture.p3d.skip_wrapper  import KLP3DEncoderSkip,P3DDecoderSkip
 from ..architecture.p3d.kl import DiagonalGaussianDistribution
+from ..architecture.p3d.transformer import WindowAttention3D
+from ..architecture.p3d.conv import padded_conv_forward
 from ..architecture.downstream import SequentialModel
 from ..utils import load_weights
 from GIFt.strategies.lora import LoRAAllFineTuningStrategy
@@ -57,6 +60,9 @@ class TadpoleDFT(Module):
                 encoder_activation_ckpt: bool = False,
                 decoder_activation_ckpt: bool = False, 
                 subnetwork_activation_ckpt: bool = False,
+                fused_attention: bool = False,
+                compile: bool = False,
+                padded_output_conv: bool = False,
                 ):
         """
         Tadpole Dynamic Fine-Tuning (DFT) Model
@@ -122,7 +128,26 @@ class TadpoleDFT(Module):
         self.encoder_crop_size = encoder_crop_size if encoder_crop_size is not None else 1e6
         self.max_internal_batchsize = max_internal_batchsize
         self.subnetwork_activation_ckpt = subnetwork_activation_ckpt
+        for m in self.modules():
+            if isinstance(m, WindowAttention3D):
+                m.fused = fused_attention
+            if padded_output_conv and isinstance(m, nn.Conv3d) and m.out_channels == 1:
+                m._conv_forward = types.MethodType(padded_conv_forward, m)
+        self.compiled = compile
+        if compile:
+            assert fused_attention, "compile requires fused_attention"
+            torch._dynamo.config.cache_size_limit = max(torch._dynamo.config.cache_size_limit, 64)
+            self.encoder.forward = torch.compile(self.encoder.forward, dynamic=False, options={"layout_optimization": False})
+            self.decoder.forward = torch.compile(self.decoder.forward, dynamic=False, options={"layout_optimization": False})
         
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if getattr(self, "compiled", False):
+            for m in self.modules():
+                if getattr(m, "merged", not mode) == mode:
+                    (m.unmerge_weight if mode else m.merge_weight)()
+        return self
+
     def latent_sample(self, dist: DiagonalGaussianDistribution) -> torch.Tensor:
         if self.latent_type == "sample":
             return dist.sample()
